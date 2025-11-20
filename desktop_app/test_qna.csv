@@ -1,3 +1,3 @@
-id;questions;answers
-1;Is this the one?;yes
-2;Is this the one?;no
+question;choice_correct;choice_1;choice_2;choice_3
+Is this the one?;yes;no;no2;no3
+Is this the two?;no;hr;ds;ht
