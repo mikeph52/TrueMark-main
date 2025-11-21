@@ -23,7 +23,7 @@ def quiz(n):
 
 # Run quiz
 def main():
-    print("TrueMark proof of concept 0.3.0\n by mikeph_ 2025")
+    print("TrueMark proof of concept 0.5.0\n by mikeph_ 2025")
 
     for n in question_list:
         quiz(n)
