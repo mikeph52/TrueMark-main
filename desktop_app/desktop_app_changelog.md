@@ -1,5 +1,7 @@
 # TrueMark Desktop Changelog
 
+- ## Version 0.10.0
+  Fix correct answers order in QR.
 - ## Version 0.7.0
   Replace barcode with QR.
 - ## Version 0.6.0

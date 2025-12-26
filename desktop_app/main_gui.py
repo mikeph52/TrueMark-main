@@ -27,65 +27,93 @@ def get_shuffled_options(df, n):
     random.shuffle(choices)
     return choices
 
-def generate_omr_sheet(df, filename, set_label="A"):
-    question_list = list(range(len(df)))
-    random.shuffle(question_list)
-
-    answer_key = []
-
-    c = canvas.Canvas(filename, pagesize=A4)
+def draw_qr_and_title(c, encoded_answers, title_text):
+    """Draw QR code at top-right and title at top-left."""
     width, height = A4
-    y_start = height - 80  # leave space for QR at top
-    y = y_start
+    y_title = height - 50
+    # Draw title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y_title, title_text)
 
-    # ---- QR CODE (ANSWER KEY) ----
-    # For QR, we can generate it dynamically after shuffling questions
-    encoded_answers_list = []
-
-    for idx, n in enumerate(question_list):
-        shuffled = get_shuffled_options(df, n)
-        correct_letter = chr(65 + [i for i, (_, is_correct) in enumerate(shuffled) if is_correct == 'correct'][0])
-        encoded_answers_list.append(f"Q{idx+1}={correct_letter}")
-
-    encoded_answers = f"SET={set_label}|" + "|".join(encoded_answers_list)
-
+    # Draw QR code
     qr_code = qr.QrCodeWidget(encoded_answers)
     bounds = qr_code.getBounds()
     qr_width = bounds[2] - bounds[0]
     qr_height = bounds[3] - bounds[1]
     d = Drawing(50, 50, transform=[50/qr_width, 0, 0, 50/qr_height, 0, 0])
     d.add(qr_code)
-    renderPDF.draw(d, c, width - 100, height - 70)  # top-right corner
+    renderPDF.draw(d, c, width - 100, height - 70)  # Top-right corner
 
-    # ---- QUESTIONS ----
-    for idx, n in enumerate(question_list):
-        question = df.question[n]
+def generate_omr_set(df, set_label="A"):
+    """Generate question sheet (with choices) and answer sheet (with bubbles)."""
+    question_list = list(range(len(df)))
+    random.shuffle(question_list)
+
+    shuffled_questions = []  # Store shuffled options for each question
+
+    # ---- SHUFFLE AND STORE OPTIONS ----
+    for n in question_list:
         shuffled = get_shuffled_options(df, n)
+        shuffled_questions.append(shuffled)
 
+    # ---- PREP ANSWER KEY ----
+    answer_key = []
+    for idx, shuffled in enumerate(shuffled_questions):
+        correct_letter = chr(65 + [i for i, (_, is_correct) in enumerate(shuffled) if is_correct == 'correct'][0])
+        answer_key.append(f"Q{idx+1}={correct_letter}")
+
+    encoded_answers = f"SET={set_label}|" + "|".join(answer_key)
+    width, height = A4
+    y_start = height - 100
+    y_gap = 50
+
+    # ---- QUESTION SHEET (WITH CHOICES) ----
+    q_filename = f"omr_set_{set_label}_questions.pdf"
+    c = canvas.Canvas(q_filename, pagesize=A4)
+    y = y_start
+    draw_qr_and_title(c, encoded_answers, f"TrueMark Test - Set {set_label}")
+
+    for idx, shuffled in enumerate(shuffled_questions):
+        question = df.question[question_list[idx]]
+        c.setFont("Helvetica", 12)
         c.drawString(50, y, f"Q{idx+1}: {question}")
 
-        correct_letter = None
-        for i, (answer, is_correct) in enumerate(shuffled):
-            pos_x = 70 + i * 100
-            c.circle(pos_x, y - 15, 10)
-            c.drawString(pos_x + 15, y - 20, chr(65 + i))
-            if is_correct == 'correct':
-                correct_letter = chr(65 + i)
+        for i, (answer, _) in enumerate(shuffled):
+            c.drawString(70, y - (i + 1) * 15, f"{chr(65 + i)}. {answer}")
 
-        y -= 50
+        y -= y_gap + len(shuffled) * 15
         if y < 120:
             c.showPage()
-            # Re-draw QR code on new page
-            renderPDF.draw(d, c, width - 100, height - 70)
+            draw_qr_and_title(c, encoded_answers, f"TrueMark Test - Set {set_label}")
             y = y_start
 
     c.save()
 
+    # ---- ANSWER SHEET (BUBBLES ONLY) ----
+    a_filename = f"omr_set_{set_label}_answers.pdf"
+    c2 = canvas.Canvas(a_filename, pagesize=A4)
+    y = y_start
+    draw_qr_and_title(c2, encoded_answers, f"TrueMark Answer Sheet - Set {set_label}")
+
+    for idx in range(len(df)):
+        c2.setFont("Helvetica", 12)
+        c2.drawString(50, y, f"Q{idx+1}:")  # Question number only
+        for i in range(4):
+            pos_x = 70 + i * 100
+            c2.circle(pos_x, y - 15, 10)  # Blank circles
+            c2.drawString(pos_x + 15, y - 20, chr(65 + i))
+        y -= y_gap
+        if y < 120:
+            c2.showPage()
+            draw_qr_and_title(c2, encoded_answers, f"TrueMark Answer Sheet - Set {set_label}")
+            y = y_start
+
+    c2.save()
+
 def generate_multiple_sets(df, num_sets=3):
     for i in range(num_sets):
-        set_label = chr(65 + i)  # A, B, C...
-        filename = f"omr_set_{set_label}.pdf"
-        generate_omr_sheet(df, filename, set_label)
+        set_label = chr(65 + i)
+        generate_omr_set(df, set_label)
 
 # -------------------------
 #  GUI APPLICATION
@@ -96,8 +124,8 @@ class OMRGeneratorGUI(QWidget):
         super().__init__()
 
         self.csv_path = None
-        self.setWindowTitle("TrueMark 0.7.0 Alpha Testing by mikeph_")
-        self.setMinimumSize(450, 250)
+        self.setWindowTitle("TrueMark 0.10.0 by mikeph_")
+        self.setMinimumSize(500, 250)
 
         layout = QVBoxLayout()
 
@@ -120,7 +148,7 @@ class OMRGeneratorGUI(QWidget):
         sets_layout.addWidget(sets_label)
         sets_layout.addWidget(self.sets_input)
 
-        btn_generate = QPushButton("Generate Single OMR PDF")
+        btn_generate = QPushButton("Generate Single Set")
         btn_generate.setStyleSheet("font-size: 16px; padding: 8px;")
         btn_generate.clicked.connect(self.generate_pdf)
 
@@ -150,8 +178,8 @@ class OMRGeneratorGUI(QWidget):
             return
         try:
             df = pd.read_csv(self.csv_path, sep=None, engine="python")
-            generate_omr_sheet(df, filename="omr_set_A.pdf", set_label="A")
-            QMessageBox.information(self, "Success", "OMR Sheet generated successfully!")
+            generate_multiple_sets(df, num_sets=1)
+            QMessageBox.information(self, "Success", "Single OMR set generated successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate sheet:\n{e}")
 
@@ -164,7 +192,7 @@ class OMRGeneratorGUI(QWidget):
             df = pd.read_csv(self.csv_path, sep=None, engine="python")
             generate_multiple_sets(df, num_sets=num_sets)
             QMessageBox.information(
-                self, "Success", f"{num_sets} OMR sets generated successfully!"
+                self, "Success", f"{num_sets} OMR sets (questions + answers) generated successfully!"
             )
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
