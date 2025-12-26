@@ -16,6 +16,8 @@ python3 -m venv path/to/venv/
 ```
 Dependencies:
 - pandas
+- PySide6
+- reportlab
 - pillow (for barcode generation)
 
 Install all dependencies with pip3.
@@ -23,6 +25,8 @@ Install all dependencies with pip3.
 pip3 install pandas
 pip3 install python-barcode 
 pip3 install pillow
+pip3 install PySide6
+pip3 install reportlab
 ```
 
 ## Features
