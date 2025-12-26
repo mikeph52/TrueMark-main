@@ -1,5 +1,9 @@
 # TrueMark Desktop Changelog
 
+- ## Version 0.7.0
+  Replace barcode with QR.
+- ## Version 0.6.0
+  Fix multiple exam sheet generation.
 - ## Version 0.5.0
   Use PySide 6 for modern GUI.
 - ## Version 0.4.0
