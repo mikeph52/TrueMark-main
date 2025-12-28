@@ -1,5 +1,7 @@
 # TrueMark Desktop Changelog
 
+- ## Version 0.11.0
+  Pazaz Technology added.
 - ## Version 0.10.0
   Fix correct answers order in QR.
 - ## Version 0.7.0

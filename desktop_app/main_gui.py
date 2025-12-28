@@ -1,6 +1,9 @@
 import sys
 import random
+import json
 import pandas as pd
+import base64
+import codecs
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QPushButton,
     QLabel, QFileDialog, QMessageBox, QSpinBox, QHBoxLayout
@@ -59,10 +62,17 @@ def generate_omr_set(df, set_label="A"):
     # ---- PREP ANSWER KEY ----
     answer_key = []
     for idx, shuffled in enumerate(shuffled_questions):
-        correct_letter = chr(65 + [i for i, (_, is_correct) in enumerate(shuffled) if is_correct == 'correct'][0])
+        correct_index = [i for i, (_, is_correct) in enumerate(shuffled) if is_correct == 'correct'][0]
+        correct_letter = chr(65 + correct_index)
         answer_key.append(f"Q{idx+1}={correct_letter}")
+    # Pazaz technology(REDACTED ---> MORE INFO ON NOTION PAGE)
+    answer_key_str = json.dumps(answer_key)
+    base64_encoded = base64.b64encode(answer_key_str.encode()).decode()
+    encrypted_answers = base64_encoded
+    for _ in range(5):
+        encrypted_answers = codecs.encode(encrypted_answers, 'rot_13')
+    encoded_answers = f"SET={set_label}|" + encrypted_answers
 
-    encoded_answers = f"SET={set_label}|" + "|".join(answer_key)
     width, height = A4
     y_start = height - 100
     y_gap = 50
