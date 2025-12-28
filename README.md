@@ -22,11 +22,7 @@ Dependencies:
 
 Install all dependencies with pip3.
 ```bash
-pip3 install pandas
-pip3 install python-barcode 
-pip3 install pillow
-pip3 install PySide6
-pip3 install reportlab
+pip3 install -r requirements.txt
 ```
 
 ## Features
